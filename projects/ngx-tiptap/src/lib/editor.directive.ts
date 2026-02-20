@@ -4,6 +4,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Content, Editor, type EditorEvents } from '@tiptap/core';
+import type {} from '@tiptap/markdown';
 
 @Directive({
   selector: 'tiptap[editor], [tiptap][editor], tiptap-editor[editor], [tiptapEditor][editor]',
@@ -20,7 +21,7 @@ export class TiptapEditorDirective implements OnInit, AfterViewInit, ControlValu
   protected changeDetectorRef = inject(ChangeDetectorRef);
 
   readonly editor = input.required<Editor>();
-  readonly outputFormat = input<'json' | 'html'>('html');
+  readonly outputFormat = input<'json' | 'html' | 'markdown'>('html');
 
   protected onChange: (value: Content) => void = () => { /** */ };
   protected onTouched: () => void = () => { /** */ };
@@ -28,7 +29,10 @@ export class TiptapEditorDirective implements OnInit, AfterViewInit, ControlValu
   // Writes a new value to the element.
   // This methods is called when programmatic changes from model to view are requested.
   writeValue(value: Content): void {
-    this.editor().chain().setContent(value, { emitUpdate: false }).run();
+    this.editor().chain().setContent(value, {
+      emitUpdate: false,
+      contentType: this.getContentType(),
+    }).run();
   }
 
   // Registers a callback function that is called when the control's value changes in the UI.
@@ -55,13 +59,20 @@ export class TiptapEditorDirective implements OnInit, AfterViewInit, ControlValu
     // Needed for ChangeDetectionStrategy.OnPush to get notified about changes
     this.changeDetectorRef.markForCheck();
 
-    if (this.outputFormat() === 'html') {
+    if (this.getContentType()=== 'html') {
       this.onChange(editor.getHTML());
       return;
+    } else if (this.getContentType() === 'markdown') {
+      this.onChange(editor.getMarkdown());
+      return
     }
 
     this.onChange(editor.getJSON());
   };
+
+  private getContentType() {
+    return this.editor().options.contentType || this.outputFormat();
+  }
 
   ngOnInit(): void {
     const editor = this.editor();
@@ -71,14 +82,17 @@ export class TiptapEditorDirective implements OnInit, AfterViewInit, ControlValu
     this.elRef.nativeElement.innerHTML = '';
 
     // insert the editor in the dom
-    this.elRef.nativeElement.append(...Array.from(editor.options.element?.childNodes || []));
+    editor.mount(this.elRef.nativeElement);
 
     // update the options for the editor
     editor.setOptions({ element: this.elRef.nativeElement });
 
     // update content to the editor
-    if (innerHTML) {
-      editor.chain().setContent(innerHTML, { emitUpdate: false }).run();
+    if (innerHTML && this.getContentType() === 'html') {
+      editor.chain().setContent(innerHTML, {
+        emitUpdate: false,
+        contentType: 'html',
+      }).run();
     }
 
     // register blur handler to update `touched` property

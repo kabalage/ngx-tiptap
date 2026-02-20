@@ -5,6 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { Content, Editor } from '@tiptap/core';
+import { Markdown } from '@tiptap/markdown';
 import StarterKit from '@tiptap/starter-kit';
 
 import { TiptapEditorDirective } from './editor.directive';
@@ -273,5 +274,78 @@ describe('NgxTiptapDirective: Reactive FormsModule', () => {
     component.doc.reset();
     fixture.detectChanges();
     expect(component.editor.view.state.doc.textContent).toBe('');
+  });
+});
+
+describe('NgxTiptapDirective: Markdown Support', () => {
+  @Component({
+    template: '<div tiptap [editor]="editor()" [(ngModel)]="value"></div>',
+    imports: [FormsModule, TiptapEditorDirective],
+  })
+  class TestMarkdownEditorComponent {
+    readonly editor = input.required<Editor>();
+    value = model<Content>('Default Text');
+  }
+
+  let component: TestMarkdownEditorComponent;
+  let fixture: ComponentFixture<TestMarkdownEditorComponent>;
+  let directiveEl: DebugElement;
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      imports: [
+        FormsModule,
+        TestMarkdownEditorComponent,
+        TiptapEditorDirective,
+      ],
+      providers: [
+        {
+          provide: ElementRef,
+          useValue: new ElementRef(document.createElement('div')),
+        },
+        Renderer2,
+        ChangeDetectorRef,
+      ],
+    });
+
+    await TestBed.compileComponents();
+
+    const editor = new Editor({
+      extensions: [StarterKit, Markdown],
+      contentType: 'markdown',
+    });
+
+    fixture = TestBed.createComponent(TestMarkdownEditorComponent);
+    fixture.componentRef.setInput('editor', editor);
+    component = fixture.componentInstance;
+
+    directiveEl = fixture.debugElement.query(By.directive(TiptapEditorDirective));
+
+    fixture.detectChanges();
+  });
+
+  it('should render markdown value correctly', async () => {
+    component.value.set('# Hello world!');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const editorEl: HTMLElement = directiveEl.query(By.css('.ProseMirror')).nativeElement;
+    expect(editorEl.textContent).toBe('Hello world!');
+    expect(editorEl.querySelector('h1')).toBeTruthy();
+  });
+
+  it('should update markdown value correctly', async () => {
+    component.editor()
+      .chain()
+      .setContent('Hello world!', { emitUpdate: true })
+      .selectAll()
+      .setBold()
+      .run();
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(component.value()).toBe('**Hello world!**');
   });
 });

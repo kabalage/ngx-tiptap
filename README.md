@@ -71,11 +71,43 @@ and in HTML
 
 ## Options
 
-- outputFormat [`json` or `html`] - defaults to html.
+- outputFormat [`json` | `html` | `markdown`] - defaults to html.
 
-You can get the json or html format from the editor directly as well.
+You can get the json, html, or markdown format from the editor directly as well.
 
 Refer https://www.tiptap.dev/guide/output#export
+
+## Markdown
+
+To use markdown content type, install the `@tiptap/markdown` package and configure the editor with the Markdown extension:
+
+```ts
+import { Component, OnDestroy } from '@angular/core';
+import { Editor } from '@tiptap/core';
+import { Markdown } from '@tiptap/markdown';
+import StarterKit from '@tiptap/starter-kit';
+import { TiptapEditorDirective } from 'ngx-tiptap';
+
+@Component({
+  selector: 'app-root',
+  template: './app.component.html',
+  imports: [CommonModule, FormsModule, TiptapEditorDirective],
+})
+export class AppComponent implements OnDestroy {
+  editor = new Editor({
+    extensions: [StarterKit, Markdown],
+    contentType: 'markdown', // Important: set the content type to markdown
+  });
+
+  value = '# Hello, Tiptap!'; // markdown string
+
+  ngOnDestroy(): void {
+    this.editor.destroy();
+  }
+}
+```
+
+Refer: https://tiptap.dev/docs/editor/markdown
 
 ## Extensions
 

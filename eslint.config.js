@@ -69,6 +69,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ["**/*.spec.ts"],
+    rules: {
+      "max-classes-per-file": "off",
+    },
+  },
+  {
     files: ["**/*.html"],
     extends: [
       ...angular.configs.templateRecommended,
